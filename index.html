@@ -2,44 +2,88 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Demostración WAF Cloudflare</title>
+  <title>Cloudflare WAF - Security Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 40px; background: #f4f4f9; }
-    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 600px; }
-    button { padding: 10px 15px; margin-right: 10px; background: #056dff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button.danger { background: #d9381e; }
-    pre { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 4px; overflow-x: auto; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background: #eaedf0; display: flex; justify-content: center; }
+    .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); max-width: 650px; width: 100%; }
+    h1 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-top: 0; }
+    p.desc { color: #64748b; font-size: 1.1em; }
+    .actions { background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; display: flex; gap: 15px; }
+    button { padding: 12px 20px; font-size: 1em; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; flex-grow: 1; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .btn-clean { background: #0051c3; color: white; }
+    .btn-clean:hover { background: #003fa0; transform: translateY(-1px); }
+    
+    .btn-attack { background: #d9381e; color: white; }
+    .btn-attack:hover { background: #b02a18; transform: translateY(-1px); }
+
+    h3 { color: #1e293b; margin-bottom: 10px; }
+    #visual-output { border-radius: 8px; padding: 25px; text-align: center; border: 2px solid #e2e8f0; background: #f1f5f9; transition: all 0.3s; }
+    
+    .status-icon { font-size: 3em; margin-bottom: 15px; display: block; }
+    .status-title { font-size: 1.5em; font-weight: bold; margin-bottom: 5px; display: block; }
+    .status-desc { font-size: 1em; display: block; }
+
+    /* Estados visuales */
+    .state-idle { border-color: #e2e8f0; background: #f1f5f9; color: #64748b; }
+    .state-idle .status-icon::before { content: "📡"; }
+
+    .state-success { border-color: #10b981; background: #ecfdf5; color: #065f46; }
+    .state-success .status-icon::before { content: "✅"; }
+
+    .state-blocked { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
+    .state-blocked .status-icon::before { content: "🛡️"; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Prueba de WAF en Cloudflare</h1>
-    <p>Haz clic en los botones para probar el comportamiento del WAF:</p>
+  <div class="container">
+    <h1>Cloudflare WAF <span style="font-weight:normal; color:#64748b; font-size:0.8em;">(Security Dashboard)</span></h1>
+    <p class="desc">Simulador visual de seguridad en el Edge. Prueba cómo el Middleware de Cloudflare intercepta amenazas antes de que lleguen a la aplicación.</p>
     
-    <button onclick="probarPeticion('usuario=Anderson')">Enviar Petición Limpia</button>
-    <button class="danger" onclick="probarAtaque()">Simular Ataque SQLi</button>
+    <div class="actions">
+      <button class="btn-clean" onclick="probarPeticion('usuario=Anderson')">Tráfico Seguro</button>
+      <button class="btn-attack" onclick="probarAtaque()">Simular SQL Injection</button>
+    </div>
     
-    <h3>Respuesta del Servidor / WAF:</h3>
-    <pre id="output">Esperando acción...</pre>
+    <h3>Estado del Edge WAF:</h3>
+    <div id="visual-output" class="state-idle">
+      <span class="status-icon"></span>
+      <span class="status-title">Esperando Acción...</span>
+      <span class="status-desc">Selecciona un tipo de tráfico arriba para comenzar la prueba.</span>
+    </div>
   </div>
 
   <script>
+    const outputDiv = document.getElementById('visual-output');
+    const statusTitle = outputDiv.querySelector('.status-title');
+    const statusDesc = outputDiv.querySelector('.status-desc');
+
+    function setVisualState(state, title, desc) {
+      outputDiv.className = state; // Cambia la clase CSS (colores)
+      statusTitle.textContent = title;
+      statusDesc.textContent = desc;
+    }
+
     async function probarPeticion(query) {
-      const output = document.getElementById('output');
-      output.textContent = 'Enviando petición a Cloudflare...';
+      setVisualState('state-idle', 'Analizando...', 'Enviando petición segura a Cloudflare Edge...');
+      
       try {
         const res = await fetch(`${window.location.pathname}?${query}`);
+        
         if (res.ok) {
-          output.textContent = `Código HTTP: ${res.status} OK\n\nEl WAF permitió la solicitud.\nEl sitio cargó correctamente.`;
+          setVisualState('state-success', '200 OK - Tráfico Permitido', 'El Middleware analizó la URL y no encontró amenazas. La página cargó correctamente.');
         } else {
-          output.textContent = `Código HTTP: ${res.status}\n\n⚠️ Petición interceptada/rechazada por Cloudflare WAF Security Edge.`;
+          // Esto no debería pasar con el botón azul, pero por seguridad:
+          setVisualState('state-blocked', `${res.status} - Bloqueado`, 'El WAF ha interceptado tráfico sospechoso de forma inesperada.');
         }
       } catch (err) {
-        output.textContent = '❌ Petición bloqueada por la red:\n' + err;
+        setVisualState('state-blocked', 'Error de Red', 'La petición fue bloqueada antes de completarse.');
       }
     }
 
     function probarAtaque() {
+      // Importante: No cambiamos el estado visual aquí.
+      // Navegamos directamente para que el navegador cargue la página de error del middleware.
       window.location.href = window.location.pathname + "?user=admin' OR '1'='1";
     }
   </script>
