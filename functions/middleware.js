@@ -1,14 +1,17 @@
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const queryString = url.search.toUpperCase();
+  const searchParams = url.search.toLowerCase();
 
-  // Detecta patrones de Inyección SQL
-  if (
-    queryString.includes("OR") ||
-    queryString.includes("'") ||
-    queryString.includes("%27") ||
-    queryString.includes("ATTACK")
-  ) {
+  // Detecta palabras clave de inyección SQL comunmente usadas
+  const esAtaque =
+    searchParams.includes("or") ||
+    searchParams.includes("sqli") ||
+    searchParams.includes("'") ||
+    searchParams.includes("%27") ||
+    searchParams.includes("1=1") ||
+    searchParams.includes("1%3d1");
+
+  if (esAtaque) {
     return new Response(
       JSON.stringify({
         status: 403,

@@ -59,10 +59,13 @@
       title.textContent = 'Analizando en el Edge...';
       desc.textContent = 'Enviando solicitud a la red global de Cloudflare...';
 
-      const query = esAtaque ? '?user=admin%27%20OR%20%271%27=%271&attack=sqli' : '?user=Anderson';
+      // Parámetros formateados explícitamente para asegurar la detección en el middleware
+      const targetUrl = esAtaque 
+        ? window.location.pathname + '?attack=sqli&user=admin%27+OR+1=1' 
+        : window.location.pathname + '?user=Anderson';
 
       try {
-        const res = await fetch(window.location.pathname + query);
+        const res = await fetch(targetUrl);
         
         if (res.status === 200) {
           output.className = 'state-success';
