@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demostración WAF Cloudflare</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f4f4f9; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    button { padding: 10px 15px; background: #056dff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    pre { background: #eee; padding: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Prueba de Backend + WAF Cloudflare</h1>
+    <p>Haz clic en el botón para enviar una petición limpia al Backend en Netlify:</p>
+    <button onclick="enviarPeticion('Anderson')">Enviar Petición Limpia</button>
+    <button onclick="enviarPeticion('admin\' OR \'1\'=\'1')">Simular Petición SQLi</button>
+    
+    <h3>Respuesta del Servidor:</h3>
+    <pre id="output">Esperando acción...</pre>
+  </div>
+
+  <script>
+    async function enviarPeticion(parametro) {
+      const output = document.getElementById('output');
+      output.textContent = 'Cargando...';
+      try {
+        const res = await fetch(`/.netlify/functions/api?user=${encodeURIComponent(parametro)}`);
+        const data = await res.text();
+        output.textContent = `Código HTTP: ${res.status}\n\nRespuesta:\n${data}`;
+      } catch (err) {
+        output.textContent = 'Error de conexión / Bloqueado por WAF: ' + err;
+      }
+    }
+  </script>
+</body>
+</html>
