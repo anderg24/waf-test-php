@@ -7,7 +7,7 @@
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background: #eaedf0; display: flex; justify-content: center; }
     .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); max-width: 650px; width: 100%; }
     h1 { color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-top: 0; }
-    p.desc { color: #64748b; font-size: 1.1em; }
+    p.desc { color: #64748b; font-size: 1.05em; line-height: 1.5; }
     .actions { background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px; display: flex; gap: 15px; }
     button { padding: 12px 20px; font-size: 1em; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; flex-grow: 1; text-transform: uppercase; letter-spacing: 0.5px; }
     
@@ -20,71 +20,68 @@
     h3 { color: #1e293b; margin-bottom: 10px; }
     #visual-output { border-radius: 8px; padding: 25px; text-align: center; border: 2px solid #e2e8f0; background: #f1f5f9; transition: all 0.3s; }
     
-    .status-icon { font-size: 3em; margin-bottom: 15px; display: block; }
-    .status-title { font-size: 1.5em; font-weight: bold; margin-bottom: 5px; display: block; }
-    .status-desc { font-size: 1em; display: block; }
+    .status-icon { font-size: 3.5em; margin-bottom: 10px; display: block; }
+    .status-title { font-size: 1.4em; font-weight: bold; margin-bottom: 8px; display: block; }
+    .status-desc { font-size: 0.95em; display: block; line-height: 1.4; }
 
-    /* Estados visuales */
-    .state-idle { border-color: #e2e8f0; background: #f1f5f9; color: #64748b; }
-    .state-idle .status-icon::before { content: "📡"; }
-
+    .state-idle { border-color: #cbd5e1; background: #f8fafc; color: #64748b; }
     .state-success { border-color: #10b981; background: #ecfdf5; color: #065f46; }
-    .state-success .status-icon::before { content: "✅"; }
-
     .state-blocked { border-color: #ef4444; background: #fef2f2; color: #991b1b; }
-    .state-blocked .status-icon::before { content: "🛡️"; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Cloudflare WAF <span style="font-weight:normal; color:#64748b; font-size:0.8em;">(Security Dashboard)</span></h1>
-    <p class="desc">Simulador visual de seguridad en el Edge. Prueba cómo el Middleware de Cloudflare intercepta amenazas antes de que lleguen a la aplicación.</p>
+    <p class="desc">Simulador visual de seguridad en el Edge. Prueba cómo el Middleware de Cloudflare intercepta amenazas en tiempo real.</p>
     
     <div class="actions">
-      <button class="btn-clean" onclick="probarPeticion('usuario=Anderson')">Tráfico Seguro</button>
-      <button class="btn-attack" onclick="probarAtaque()">Simular SQL Injection</button>
+      <button class="btn-clean" onclick="probarTráfico(false)">Tráfico Seguro</button>
+      <button class="btn-attack" onclick="probarTráfico(true)">Simular SQL Injection</button>
     </div>
     
     <h3>Estado del Edge WAF:</h3>
     <div id="visual-output" class="state-idle">
-      <span class="status-icon"></span>
-      <span class="status-title">Esperando Acción...</span>
-      <span class="status-desc">Selecciona un tipo de tráfico arriba para comenzar la prueba.</span>
+      <span class="status-icon" id="icon">📡</span>
+      <span class="status-title" id="title">Esperando Acción...</span>
+      <span class="status-desc" id="desc">Selecciona un tipo de tráfico arriba para comenzar la prueba.</span>
     </div>
   </div>
 
   <script>
-    const outputDiv = document.getElementById('visual-output');
-    const statusTitle = outputDiv.querySelector('.status-title');
-    const statusDesc = outputDiv.querySelector('.status-desc');
+    async function probarTráfico(esAtaque) {
+      const output = document.getElementById('visual-output');
+      const icon = document.getElementById('icon');
+      const title = document.getElementById('title');
+      const desc = document.getElementById('desc');
 
-    function setVisualState(state, title, desc) {
-      outputDiv.className = state; // Cambia la clase CSS (colores)
-      statusTitle.textContent = title;
-      statusDesc.textContent = desc;
-    }
+      output.className = 'state-idle';
+      icon.textContent = '⏳';
+      title.textContent = 'Analizando en el Edge...';
+      desc.textContent = 'Enviando solicitud a la red global de Cloudflare...';
 
-    async function probarPeticion(query) {
-      setVisualState('state-idle', 'Analizando...', 'Enviando petición segura a Cloudflare Edge...');
-      
+      const query = esAtaque ? '?user=admin%27%20OR%20%271%27=%271&attack=sqli' : '?user=Anderson';
+
       try {
-        const res = await fetch(`${window.location.pathname}?${query}`);
+        const res = await fetch(window.location.pathname + query);
         
-        if (res.ok) {
-          setVisualState('state-success', '200 OK - Tráfico Permitido', 'El Middleware analizó la URL y no encontró amenazas. La página cargó correctamente.');
-        } else {
-          // Esto no debería pasar con el botón azul, pero por seguridad:
-          setVisualState('state-blocked', `${res.status} - Bloqueado`, 'El WAF ha interceptado tráfico sospechoso de forma inesperada.');
+        if (res.status === 200) {
+          output.className = 'state-success';
+          icon.textContent = '✅';
+          title.textContent = '200 OK - Tráfico Permitido';
+          desc.textContent = 'El Middleware analizó los parámetros de la URL y permitió la solicitud.';
+        } else if (res.status === 403) {
+          const data = await res.json();
+          output.className = 'state-blocked';
+          icon.textContent = '🛡️';
+          title.textContent = '403 Forbidden - Bloqueado por WAF';
+          desc.textContent = `⚠️ Amenaza detectada (${data.rule}). La solicitud fue interceptada inmediatamente por el Middleware.`;
         }
       } catch (err) {
-        setVisualState('state-blocked', 'Error de Red', 'La petición fue bloqueada antes de completarse.');
+        output.className = 'state-blocked';
+        icon.textContent = '🚨';
+        title.textContent = 'Conexión Bloqueada';
+        desc.textContent = 'La solicitud fue rechazada por completo.';
       }
-    }
-
-    function probarAtaque() {
-      // Importante: No cambiamos el estado visual aquí.
-      // Navegamos directamente para que el navegador cargue la página de error del middleware.
-      window.location.href = window.location.pathname + "?user=admin' OR '1'='1";
     }
   </script>
 </body>
