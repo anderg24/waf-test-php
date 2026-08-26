@@ -1,0 +1,4 @@
+[build]
+  base = "nombre-de-tu-carpeta"
+  publish = "nombre-de-tu-carpeta"
+  functions = "nombre-de-tu-carpeta/netlify/functions"
