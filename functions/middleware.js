@@ -1,8 +1,8 @@
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const queryString = url.search;
+  const queryString = url.search.toUpperCase();
 
-  // REGLA WAF: Detectar inyección SQL o caracteres sospechosos en la URL
+  // Detecta 'OR', comillas simples (') o su equivalente codificado en URL (%27)
   if (
     queryString.includes("OR") ||
     queryString.includes("'") ||
@@ -37,6 +37,5 @@ export async function onRequest(context) {
     );
   }
 
-  // Si la petición es limpia, dejarla pasar
   return await context.next();
 }
