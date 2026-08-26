@@ -18,7 +18,7 @@
     .btn-attack:hover { background: #b02a18; transform: translateY(-1px); }
 
     h3 { color: #1e293b; margin-bottom: 10px; }
-    #visual-output { border-radius: 8px; padding: 25px; text-align: center; border: 2px solid #e2e8f0; background: #f1f5f9; transition: all 0.3s; }
+    #visual-output { border-radius: 8px; padding: 25px; text-align: center; border: 2px solid #e2e8f0; background: #f8fafc; transition: all 0.3s; }
     
     .status-icon { font-size: 3.5em; margin-bottom: 10px; display: block; }
     .status-title { font-size: 1.4em; font-weight: bold; margin-bottom: 8px; display: block; }
@@ -59,10 +59,10 @@
       title.textContent = 'Analizando en el Edge...';
       desc.textContent = 'Enviando solicitud a la red global de Cloudflare...';
 
-      // Parámetros formateados explícitamente para asegurar la detección en el middleware
+      // Petición al endpoint dinámico de funciones
       const targetUrl = esAtaque 
-        ? window.location.pathname + '?attack=sqli&user=admin%27+OR+1=1' 
-        : window.location.pathname + '?user=Anderson';
+        ? '/api?attack=sqli&user=admin%27+OR+1=1' 
+        : '/api?user=Anderson';
 
       try {
         const res = await fetch(targetUrl);
